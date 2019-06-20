@@ -20,31 +20,13 @@ host_os_tags:
   - osx-10.10
   - ubuntu-16.04
 
-# If this step should be available only for certain project types
-# just uncomment this `project_type_tags` section and include all the
-# project types supported by the step. If the step can be used for all
-# project types then you can just remove this section.
-# If no `project_type_tags` specified (or specified as an empty array)
-# that means the step can be used for any project type.
-# You can find more information about project type tags in the Step Development Guideline:
-# https://github.com/bitrise-io/bitrise/blob/master/_docs/step-development-guideline.md
-#
-# project_type_tags:
-#   - ios
-#   - macos
-#   - android
-#   - xamarin
-#   - react-native
-#   - cordova
-#   - ionic
-
 # Type tags are used for categorizing steps, for easier step discovery in Step Libraries.
 # You can find more information about type tags in the Step Development Guideline:
 # https://github.com/bitrise-io/bitrise/blob/master/_docs/step-development-guideline.md
 type_tags:
   - test
 
-is_requires_admin_user: true
+is_requires_admin_user: false
 is_always_run: false
 is_skippable: false
 run_if: ""
@@ -64,24 +46,34 @@ toolkit:
 
 
 inputs:
-  - example_step_input: Default Value - you can leave this empty if you want to
+  - browserstack_username: "$BROWSERSTACK_USERNAME"
     opts:
-      title: "Example Step Input"
-      summary: Summary. No more than 2-3 sentences.
-      description: |
-        Description of this input.
-
-        Can be Markdown formatted text.
-      is_expand: true
+      title: "Browserstack username"
+      summary: ""
+      description: "The username for Browserstack authentication"
       is_required: true
-      value_options: []
+  - browserstack_password: "$BROWSERSTACK_PASSWORD"
+    opts:
+      title: "Browserstack password"
+      summary: ""
+      description: "The password for Browserstack authentication"
+      is_required: true
+  - ipa_path: "$IPA_FILE_PATH"
+    opts:
+      title: "IPA file path"
+      summary: ""
+      description: "The path to the iOS IPA file to test"
+      is_required: true
+  - xcuitest_package_path: "$XCUITEST_FILE_PATH"
+    opts:
+      title: "XCUITest zip file path"
+      summary: ""
+      description: "The path to the zipped XCUITest runner app"
+      is_required: true
 
 outputs:
-  - EXAMPLE_STEP_OUTPUT:
+  - BROWSERSTACK_BUILD_ID:
     opts:
-      title: "Example Step Output"
-      summary: Summary. No more than 2-3 sentences.
+      title: "Browserstack build identifier"
       description: |
-        Description of this output.
-
-        Can be Markdown formatted text.
+        The build identifier on Browserstack.
