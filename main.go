@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -30,15 +31,9 @@ func main() {
 	log.Printf("IPA path: %s", ipaPath)
 	log.Printf("XCUITest package path: %s", xcuitestPackagePath)
 
-	appUrl, err := uploadApp(ipaPath, username, password)
+	appUrl, testSuiteUrl, err := uploadFiles(username, password, ipaPath, xcuitestPackagePath)
 	if err != nil {
-		log.Printf("Failed to upload app with error: %s", err)
-		os.Exit(1)
-	}
-
-	testSuiteUrl, err := uploadTestSuite(xcuitestPackagePath, username, password)
-	if err != nil {
-		log.Printf("Failed to upload test suite with error: %s", err)
+		log.Printf("Failed to upload files with error: %s", err)
 		os.Exit(1)
 	}
 
@@ -83,6 +78,34 @@ func getEnvVar(key string) string {
 		os.Exit(1)
 	}
 	return value
+}
+
+func uploadFiles(username, password, ipaPath, xcuitestPackagePath string) (string, string, error) {
+	var wg sync.WaitGroup
+	wg.Add(2)
+	var appUrl string
+	var errAppUrl error
+	go func() {
+		appUrl, errAppUrl = uploadApp(ipaPath, username, password)
+		wg.Done()
+	}()
+	var testSuiteUrl string
+	var errSuiteUrl error
+	go func() {
+		testSuiteUrl, errSuiteUrl = uploadTestSuite(xcuitestPackagePath, username, password)
+		wg.Done()
+	}()
+	wg.Wait()
+
+	if errAppUrl != nil {
+		return "", "", errors.New(fmt.Sprintf("Failed to upload app with error: %s", errAppUrl))
+	}
+
+	if errSuiteUrl != nil {
+		return "", "", errors.New(fmt.Sprintf("Failed to upload test suite with error: %s", errSuiteUrl))
+	}
+
+	return appUrl, testSuiteUrl, nil
 }
 
 func uploadApp(path, username, password string) (string, error) {
