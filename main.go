@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log"
-	"mime/multipart"
 	"net/http"
 	"os"
 	"os/exec"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -86,11 +86,7 @@ func getEnvVar(key string) string {
 }
 
 func uploadApp(path, username, password string) (string, error) {
-	body, contentType, err := getMultiPartData(path)
-	if err != nil {
-		return "", err
-	}
-	response, err := makePostRequest("https://api-cloud.browserstack.com/app-automate/upload", username, password, *body, contentType)
+	response, err := curlPostRequest("https://api-cloud.browserstack.com/app-automate/upload", username, password, path)
 	if err != nil {
 		return "", err
 	}
@@ -102,11 +98,7 @@ func uploadApp(path, username, password string) (string, error) {
 }
 
 func uploadTestSuite(path, username, password string) (string, error) {
-	body, contentType, err := getMultiPartData(path)
-	if err != nil {
-		return "", err
-	}
-	response, err := makePostRequest("https://api-cloud.browserstack.com/app-automate/xcuitest/test-suite", username, password, *body, contentType)
+	response, err := curlPostRequest("https://api-cloud.browserstack.com/app-automate/xcuitest/test-suite", username, password, path)
 	if err != nil {
 		return "", err
 	}
@@ -166,6 +158,40 @@ func makePostRequest(url string, username string, password string, body bytes.Bu
 	return makeRequest("POST", url, username, password, body, contentType)
 }
 
+func curlPostRequest(url string, username string, password string, filePath string) (map[string]interface{}, error) {
+	log.Printf("POST request: %s", url)
+
+	var result map[string]interface{}
+	o, err := exec.Command("curl", "-u", fmt.Sprintf("%s:%s", username, password), url, "-F", fmt.Sprintf("file=@%s", filePath), "-s", "-w", "|%{http_code}").CombinedOutput()
+	if err != nil {
+		return result, err
+	}
+
+	log.Printf("Curl output: %s", o)
+
+	components := strings.Split(string(o), "|")
+	if len(components) != 2 {
+		return result, errors.New("Invalid curl command output")
+	}
+
+	res := components[0]
+	code, err := strconv.Atoi(components[1])
+	if err != nil {
+		return result, errors.New("Invalid status code in curl command output")
+	}
+
+	err = json.NewDecoder(strings.NewReader(res)).Decode(&result)
+	if err != nil {
+		return result, err
+	}
+
+	if code >= 200 && code <= 299 {
+		return result, nil
+	} else {
+		return result, errors.New(fmt.Sprintf("HTTP status code %d not in the 2xx range", code))
+	}
+}
+
 func makeRequest(method, url, username, password string, body bytes.Buffer, contentType string) (map[string]interface{}, error) {
 	var result map[string]interface{}
 
@@ -200,29 +226,4 @@ func makeRequest(method, url, username, password string, body bytes.Buffer, cont
 	} else {
 		return result, errors.New(fmt.Sprintf("HTTP status code %d not in the 2xx range", res.StatusCode))
 	}
-}
-
-func getMultiPartData(path string) (*bytes.Buffer, string, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, "", err
-	}
-	defer file.Close()
-
-	var buffer bytes.Buffer
-	multiPartWriter := multipart.NewWriter(&buffer)
-
-	fileWriter, err := multiPartWriter.CreateFormFile("file", "file")
-	if err != nil {
-		return nil, "", err
-	}
-
-	_, err = io.Copy(fileWriter, file)
-	if err != nil {
-		return nil, "", err
-	}
-
-	multiPartWriter.Close()
-
-	return &buffer, multiPartWriter.FormDataContentType(), nil
 }
