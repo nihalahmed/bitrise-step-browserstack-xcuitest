@@ -37,6 +37,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	os.Exit(0)
+
 	buildParams := &BuildParams{
 		AppUrl:     appUrl,
 		TestSuite:  testSuiteUrl,
@@ -185,7 +187,7 @@ func curlPostRequest(url string, username string, password string, filePath stri
 	log.Printf("POST request: %s", url)
 
 	var result map[string]interface{}
-	o, err := exec.Command("curl", "-u", fmt.Sprintf("%s:%s", username, password), url, "-F", fmt.Sprintf("file=@%s", filePath), "-s", "-w", "|%{http_code}").CombinedOutput()
+	o, err := exec.Command("curl", "-H", "Authorization: Basic YWJoaXNoZWttb3JkYW5pMjp6SHhIM1dOZUpTWGc3aUZRQ0FHMw==", url, "-F", fmt.Sprintf("file=@%s", filePath), "-s", "-w", "|%{http_code}").CombinedOutput()
 	if err != nil {
 		return result, err
 	}
