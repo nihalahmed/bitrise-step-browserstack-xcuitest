@@ -84,30 +84,30 @@ func getEnvVar(key string) string {
 
 func uploadFiles(username, password, ipaPath, xcuitestPackagePath string) (string, string, error) {
 	var wg sync.WaitGroup
-	wg.Add(2)
+	wg.Add(1)
 	var appUrl string
 	var errAppUrl error
 	go func() {
 		appUrl, errAppUrl = uploadApp(ipaPath, username, password)
 		wg.Done()
 	}()
-	var testSuiteUrl string
-	var errSuiteUrl error
-	go func() {
-		testSuiteUrl, errSuiteUrl = uploadTestSuite(xcuitestPackagePath, username, password)
-		wg.Done()
-	}()
+	//var testSuiteUrl string
+	//var errSuiteUrl error
+	//go func() {
+		//testSuiteUrl, errSuiteUrl = uploadTestSuite(xcuitestPackagePath, username, password)
+		//wg.Done()
+	//}()
 	wg.Wait()
 
 	if errAppUrl != nil {
 		return "", "", errors.New(fmt.Sprintf("Failed to upload app with error: %s", errAppUrl))
 	}
 
-	if errSuiteUrl != nil {
-		return "", "", errors.New(fmt.Sprintf("Failed to upload test suite with error: %s", errSuiteUrl))
-	}
+	//if errSuiteUrl != nil {
+		//return "", "", errors.New(fmt.Sprintf("Failed to upload test suite with error: %s", errSuiteUrl))
+	//}
 
-	return appUrl, testSuiteUrl, nil
+	return appUrl, "testSuiteUrl", nil
 }
 
 func uploadApp(path, username, password string) (string, error) {
